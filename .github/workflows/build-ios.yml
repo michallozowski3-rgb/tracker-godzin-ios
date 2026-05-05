@@ -18,20 +18,31 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-        working-directory: .
 
       - name: Sync Capacitor
         run: npx cap sync ios
+
+      - name: Show iOS project structure
+        run: ls -la ios/App/
+
+      - name: Resolve Swift Package dependencies
+        working-directory: ios/App
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project App.xcodeproj \
+            -scheme App \
+            -clonedSourcePackagesDirPath SourcePackages
 
       - name: Build iOS (unsigned – for AltStore sideload)
         working-directory: ios/App
         run: |
           xcodebuild \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath DerivedData \
+            -clonedSourcePackagesDirPath SourcePackages \
             build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -43,7 +54,7 @@ jobs:
         working-directory: ios/App
         run: |
           APP=$(find DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -1)
-          echo "App found: $APP"
+          echo "App path: $APP"
           mkdir -p Payload
           cp -r "$APP" Payload/
           zip -r TrackerGodzin.ipa Payload/
