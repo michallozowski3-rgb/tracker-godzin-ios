@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Tracker" />
+  <meta name="theme-color" content="#0a7fc4" id="themeColorMeta" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Tracker Godzin Pracy</title>
+  <style>
+    :root {
+      --primary: #0a7fc4;
+      --primary-dark: #000080;
+      --primary-light: #e8f4fd;
+      --accent: #f0a500;
+      --danger: #e53935;
+      --success: #2e7d32;
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #1a1a2e;
+      --text-muted: #6b7280;
+      --border: #dde3ed;
+      --radius: 14px;
+      --shadow: 0 2px 12px rgba(10,127,196,0.10);
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    [data-theme="dark"] {
+      --primary: #56b4e9;
+      --primary-dark: #90caf9;
+      --primary-light: #1a2d3e;
+      --accent: #ffb74d;
+      --danger: #ef5350;
+      --success: #81c784;
+      --bg: #0f1115;
+      --card: #1c1f26;
+      --text: #e8eaf6;
+      --text-muted: #8a93a8;
+      --border: #2a2f3e;
+      --shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); transition: background 0.3s, color 0.3s; }
+
+    /* HEADER */
+    .header {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: #fff;
+      padding: calc(var(--safe-top) + 14px) 16px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,128,0.3);
+    }
+    .header-title { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .header-sub { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .btn-header {
+      background: rgba(255,255,255,0.18); color: #fff; border: none;
+      border-radius: 50%; width: 38px; height: 38px; font-size: 18px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .btn-add {
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 50%; width: 42px; height: 42px; font-size: 24px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(240,165,0,0.4);
+    }
+
+    /* TARGET BAR IN HEADER */
+    .header-progress { margin-top: 6px; }
+    .header-progress-bar-bg { background: rgba(255,255,255,0.2); border-radius: 4px; height: 4px; }
+    .header-progress-bar { height: 100%; border-radius: 4px; background: #fff; transition: width 0.5s; }
+    .header-progress-label { font-size: 10px; opacity: 0.8; margin-top: 2px; }
+
+    /* TABS */
+    .tabs {
+      display: flex; background: var(--card);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 70px; z-index: 99;
+      overflow-x: auto; scrollbar-width: none;
+      transition: background 0.3s;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      flex: 1; min-width: 60px; padding: 10px 6px; text-align: center;
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      cursor: pointer; border-bottom: 3px solid transparent;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-icon { font-size: 17px; display: block; margin-bottom: 2px; }
+
+    /* MAIN */
+    .main { padding: 16px; padding-bottom: calc(var(--safe-bottom) + 80px); max-width: 600px; margin: 0 auto; }
+
+    /* CARDS */
+    .card {
+      background: var(--card); border-radius: var(--radius);
+      padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow);
+      border: 1px solid var(--border); transition: background 0.3s, border-color 0.3s;
+    }
+
+    /* STAT STRIP */
+    .stat-strip { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+    .stat-box {
+      background: var(--card); border-radius: var(--radius); padding: 14px 10px;
+      text-align: center; box-shadow: var(--shadow); border: 1px solid var(--border);
+      transition: background 0.3s;
+    }
+    .stat-val { font-size: 20px; font-weight: 800; color: var(--primary); }
+    .stat-lbl { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+
+    /* ENTRY ROW */
+    .entry {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; background: var(--card);
+      border-radius: var(--radius); margin-bottom: 10px;
+      box-shadow: var(--shadow); border: 1px solid var(--border);
+      cursor: pointer; transition: transform 0.1s, box-shadow 0.1s, background 0.3s;
+    }
+    .entry:active { transform: scale(0.98); box-shadow: none; }
+    .entry-date-box {
+      background: var(--primary-light); border-radius: 10px;
+      padding: 8px 10px; text-align: center; min-width: 48px; flex-shrink: 0;
+    }
+    .entry-day { font-size: 22px; font-weight: 800; color: var(--primary); line-height: 1; }
+    .entry-month { font-size: 10px; color: var(--primary); font-weight: 600; text-transform: uppercase; }
+    .entry-info { flex: 1; min-width: 0; }
+    .entry-job { font-weight: 700; font-size: 15px; }
+    .entry-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .entry-amount { font-weight: 800; font-size: 16px; color: var(--success); white-space: nowrap; }
+    .badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 20px; margin-left: 6px; vertical-align: middle;
+    }
+    .badge-etat { background: #e3f2fd; color: #1565c0; }
+    .badge-zlecenie { background: #fff8e1; color: #e65100; }
+    .badge-dg { background: #e8f5e9; color: #2e7d32; }
+    .badge-inne { background: #f3e5f5; color: #6a1b9a; }
+    [data-theme="dark"] .badge-etat { background: #1a2d45; color: #90caf9; }
+    [data-theme="dark"] .badge-zlecenie { background: #2d2010; color: #ffcc80; }
+    [data-theme="dark"] .badge-dg { background: #1a2d1a; color: #a5d6a7; }
+    [data-theme="dark"] .badge-inne { background: #2a1a2d; color: #ce93d8; }
+
+    /* MONTH GROUP */
+    .month-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 4px 10px; border-bottom: 2px solid var(--primary-light);
+      margin-bottom: 12px;
+    }
+    .month-name { font-size: 16px; font-weight: 800; color: var(--primary-dark); }
+    .month-sum { font-size: 13px; font-weight: 700; color: var(--success); }
+
+    /* CALENDAR */
+    .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+    .cal-head { text-align: center; font-size: 11px; font-weight: 700; color: var(--text-muted); padding: 4px; }
+    .cal-cell {
+      aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; font-size: 12px;
+      position: relative; cursor: default; transition: background 0.15s;
+    }
+    .cal-cell.has-work { background: var(--primary-light); cursor: pointer; }
+    .cal-cell.has-work:active { opacity: 0.7; }
+    .cal-cell .cal-num { font-weight: 700; color: var(--text); }
+    .cal-cell.has-work .cal-num { color: var(--primary); }
+    .cal-cell .cal-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--primary); margin-top: 2px; }
+    .cal-cell.today { background: var(--primary); }
+    .cal-cell.today .cal-num { color: #fff; }
+    .cal-cell.today .cal-dot { background: #fff; }
+    .cal-cell.other-month .cal-num { color: var(--border); }
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .cal-nav-btn { background: var(--primary-light); border: none; border-radius: 8px; padding: 8px 14px; font-size: 16px; cursor: pointer; color: var(--primary); }
+    .cal-title { font-size: 17px; font-weight: 800; color: var(--primary-dark); }
+
+    /* PROGRESS BAR */
+    .progress-wrap { margin: 4px 0 12px; }
+    .progress-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .progress-label { font-size: 12px; color: var(--text-muted); }
+    .progress-pct { font-size: 13px; font-weight: 700; }
+    .progress-bg { background: var(--bg); border-radius: 6px; height: 10px; overflow: hidden; border: 1px solid var(--border); }
+    .progress-fill { height: 100%; border-radius: 6px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+
+    /* CHARTS */
+    .chart-bar-wrap { margin-top: 8px; }
+    .chart-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .chart-label { font-size: 12px; color: var(--text-muted); width: 65px; text-align: right; flex-shrink: 0; }
+    .chart-bar-bg { flex: 1; background: var(--bg); border-radius: 4px; height: 20px; overflow: hidden; }
+    .chart-bar { height: 100%; background: linear-gradient(90deg, var(--primary), #56b4e9); border-radius: 4px; transition: width 0.5s; }
+    .chart-val { font-size: 12px; font-weight: 700; color: var(--primary); width: 60px; }
+
+    /* MODAL */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 200; display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--card); border-radius: 22px 22px 0 0;
+      width: 100%; max-width: 600px; padding: 20px 20px calc(var(--safe-bottom) + 20px);
+      transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+      max-height: 92vh; overflow-y: auto;
+    }
+    .overlay.open .modal { transform: translateY(0); }
+    .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+    .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; color: var(--primary-dark); }
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+    .form-input, .form-select {
+      width: 100%; padding: 13px 16px; border: 1.5px solid var(--border);
+      border-radius: 12px; font-size: 16px; color: var(--text);
+      background: var(--bg); outline: none; transition: border-color 0.2s, background 0.3s;
+      -webkit-appearance: none; appearance: none;
+    }
+    .form-input:focus, .form-select:focus { border-color: var(--primary); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+    .btn { padding: 15px; border-radius: 14px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; flex: 1; transition: opacity 0.15s, transform 0.1s; }
+    .btn:active { opacity: 0.8; transform: scale(0.98); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-cancel { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-full { width: 100%; flex: none; }
+
+    /* DETAIL MODAL */
+    .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .detail-row:last-of-type { border-bottom: none; }
+    .detail-key { font-size: 13px; color: var(--text-muted); }
+    .detail-val { font-size: 15px; font-weight: 700; }
+
+    /* TOGGLE SWITCH */
+    .toggle { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: var(--border); border-radius: 28px; transition: .3s; }
+    .toggle-slider:before { content: ''; position: absolute; height: 22px; width: 22px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+    input:checked + .toggle-slider { background: var(--primary); }
+    input:checked + .toggle-slider:before { transform: translateX(22px); }
+
+    /* EMPTY */
+    .empty { text-align: center; padding: 50px 20px; color: var(--text-muted); }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-text { font-size: 15px; line-height: 1.5; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: calc(var(--safe-bottom) + 20px); left: 50%; transform: translateX(-50%) translateY(80px);
+      background: #1a1a2e; color: #fff; padding: 12px 22px; border-radius: 30px;
+      font-size: 14px; font-weight: 600; z-index: 300; transition: transform 0.3s, opacity 0.3s;
+      opacity: 0; white-space: nowrap; max-width: 90vw;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    [data-theme="dark"] .toast { background: var(--primary); }
+
+    /* SECTION TITLE */
+    .section-title { font-size: 13px; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
+
+    /* ARCHIVE */
+    .archive-month { background: var(--card); border-radius: var(--radius); margin-bottom: 10px; border: 1px solid var(--border); overflow: hidden; }
+    .archive-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; background: var(--primary-light); }
+    .archive-name { font-weight: 800; color: var(--primary-dark); }
+    .archive-stats { font-size: 12px; color: var(--text-muted); }
+    .archive-body { padding: 0 16px 16px; display: none; }
+    .archive-body.open { display: block; padding-top: 12px; }
+    .archive-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+    /* PILL FILTER */
+    .pill-row { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; scrollbar-width: none; padding-bottom: 2px; }
+    .pill-row::-webkit-scrollbar { display: none; }
+    .pill { flex-shrink: 0; padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; border: 1.5px solid var(--border); background: var(--card); color: var(--text-muted); transition: all 0.15s; }
+    .pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* REPORT TABLE */
+    .report-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .report-table th { text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border); }
+    .report-table td { padding: 10px; border-bottom: 1px solid var(--border); }
+    .report-table tr:last-child td { border-bottom: none; }
+
+    /* SETTINGS */
+    .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-label { font-size: 15px; font-weight: 600; }
+    .settings-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* INFO BOXES */
+    .info-box { background: var(--primary-light); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; border-left: 3px solid var(--primary); }
+    .info-box-title { font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+    .info-box-val { font-size: 20px; font-weight: 800; color: var(--text); }
+    .info-box-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* PRINT */
+    @media print {
+      .header, .tabs, .btn-add, .btn-header, .modal, .overlay, .toast { display: none !important; }
+      .main { padding: 0; }
+      body { background: white; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div style="flex:1">
+    <div class="header-title">⏱ Tracker Godzin</div>
+    <div class="header-sub" id="headerSub">Ładowanie...</div>
+    <div class="header-progress" id="headerProgress" style="display:none">
+      <div class="header-progress-bar-bg">
+        <div class="header-progress-bar" id="headerProgressBar"></div>
+      </div>
+      <div class="header-progress-label" id="headerProgressLabel"></div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-header" onclick="toggleDarkMode()" id="darkModeBtn" title="Zmień motyw">🌙</button>
+    <button class="btn-add" onclick="openAddModal()" title="Dodaj wpis">+</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tab active" onclick="switchTab('lista')" id="tab-lista"><span class="tab-icon">📋</span>Lista</div>
+  <div class="tab" onclick="switchTab('kalendarz')" id="tab-kalendarz"><span class="tab-icon">📅</span>Kalen.</div>
+  <div class="tab" onclick="switchTab('statystyki')" id="tab-statystyki"><span class="tab-icon">📊</span>Stat.</div>
+  <div class="tab" onclick="switchTab('archiwum')" id="tab-archiwum"><span class="tab-icon">🗂️</span>Archiw.</div>
+  <div class="tab" onclick="switchTab('ustawienia')" id="tab-ustawienia"><span class="tab-icon">⚙️</span>Ustaw.</div>
+</nav>
+
+<main class="main" id="mainContent"></main>
+
+<!-- ADD / EDIT MODAL -->
+<div class="overlay" id="formOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="formModal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="formTitle">Dodaj dzień pracy</div>
+    <form id="workForm" onsubmit="saveEntry(event)">
+      <input type="hidden" id="entryId" />
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input type="date" class="form-input" id="fDate" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Rodzaj pracy</label>
+        <select class="form-select" id="fJob">
+          <option value="Etat">💼 Etat</option>
+          <option value="Zlecenie">📄 Zlecenie</option>
+          <option value="DG">🏢 Działalność gospodarcza</option>
+          <option value="Nadgodziny">⏰ Nadgodziny</option>
+          <option value="Inne">📌 Inne</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Godziny</label>
+          <input type="number" class="form-input" id="fHours" placeholder="8" min="0.5" max="24" step="0.5" required oninput="autoCalcAmount()" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Zarobek (zł)</label>
+          <input type="number" class="form-input" id="fAmount" placeholder="250" min="0" step="1" required />
+          <div class="form-hint" id="rateHint" style="display:none"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notatka (opcjonalnie)</label>
+        <input type="text" class="form-input" id="fNote" placeholder="np. projekt X, klient Y..." maxlength="100" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-cancel" onclick="closeModal()">Anuluj</button>
+        <button type="submit" class="btn btn-primary" id="formSubmitBtn">Zapisz</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="overlay" id="detailOverlay" onclick="handleDetailOverlayClick(event)">
+  <div class="modal" id="detailModal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="detailTitle">Szczegóły</div>
+    <div id="detailContent"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn btn-danger" onclick="deleteEntry()">Usuń</button>
+      <button class="btn btn-cancel" onclick="closeDetail()">Zamknij</button>
+      <button class="btn btn-primary" onclick="editFromDetail()">Edytuj</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+let workData = JSON.parse(localStorage.getItem('workData') || '[]');
+let settings = JSON.parse(localStorage.getItem('settings') || '{}');
+settings = {
+  monthlyTarget: settings.monthlyTarget || 0,
+  defaultRate: settings.defaultRate || 0,
+  defaultHours: settings.defaultHours || 8,
+  darkMode: settings.darkMode || false
+};
+
+let currentTab = 'lista';
+let calYear, calMonth;
+let editingId = null;
+let detailId = null;
+let filterJob = 'Wszystkie';
+let amountManuallySet = false;
+
+const today = new Date();
+if (!calYear) calYear = today.getFullYear();
+if (!calMonth) calMonth = today.getMonth();
+
+if (settings.darkMode) applyTheme(true);
+
+if (workData.length === 0) {
+  workData = [
+    {id:1, date:'2026-05-02', job:'Etat', hours:8, amount:280, note:'normalny dzień'},
+    {id:2, date:'2026-05-01', job:'Zlecenie', hours:4, amount:350, note:'projekt graficzny'},
+    {id:3, date:'2026-04-30', job:'Etat', hours:8, amount:280, note:''},
+    {id:4, date:'2026-04-29', job:'Nadgodziny', hours:3, amount:150, note:''},
+    {id:5, date:'2026-04-28', job:'Etat', hours:8, amount:280, note:''},
+    {id:6, date:'2026-04-25', job:'DG', hours:6, amount:600, note:'faktura 04/2026'},
+    {id:7, date:'2026-04-24', job:'Etat', hours:8, amount:280, note:''},
+    {id:8, date:'2026-04-23', job:'Zlecenie', hours:5, amount:450, note:'strona www'},
+    {id:9, date:'2026-03-31', job:'Etat', hours:8, amount:280, note:''},
+    {id:10, date:'2026-03-28', job:'DG', hours:7, amount:700, note:'marzec'}
+  ];
+  save();
+}
+
+function save() { localStorage.setItem('workData', JSON.stringify(workData)); }
+function saveSettings() { localStorage.setItem('settings', JSON.stringify(settings)); }
+function nextId() { return workData.length ? Math.max(...workData.map(e=>e.id))+1 : 1; }
+
+// ─── THEME ────────────────────────────────────────────────────────────────────
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : '');
+  document.getElementById('darkModeBtn').textContent = dark ? '☀️' : '🌙';
+  document.getElementById('themeColorMeta').content = dark ? '#0f1115' : '#0a7fc4';
+}
+
+function toggleDarkMode() {
+  settings.darkMode = !settings.darkMode;
+  applyTheme(settings.darkMode);
+  saveSettings();
+  renderContent();
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+const TAB_ORDER = ['lista', 'kalendarz', 'statystyki', 'archiwum', 'ustawienia'];
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  renderContent();
+}
+
+function renderContent() {
+  updateHeader();
+  const el = document.getElementById('mainContent');
+  if (currentTab === 'lista') el.innerHTML = renderLista();
+  else if (currentTab === 'kalendarz') el.innerHTML = renderKalendarz();
+  else if (currentTab === 'statystyki') el.innerHTML = renderStatystyki();
+  else if (currentTab === 'archiwum') el.innerHTML = renderArchiwum();
+  else if (currentTab === 'ustawienia') el.innerHTML = renderUstawienia();
+}
+
+function updateHeader() {
+  const now = new Date();
+  const m = now.toLocaleString('pl-PL', {month:'long', year:'numeric'});
+  const mEntries = workData.filter(e => {
+    const d = new Date(e.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const total = mEntries.reduce((s,e) => s+e.amount, 0);
+  document.getElementById('headerSub').textContent = `${m} • ${total.toLocaleString('pl-PL')} zł`;
+
+  const prog = document.getElementById('headerProgress');
+  if (settings.monthlyTarget > 0) {
+    const pct = Math.min(100, (total / settings.monthlyTarget * 100));
+    document.getElementById('headerProgressBar').style.width = pct.toFixed(0) + '%';
+    document.getElementById('headerProgressLabel').textContent =
+      `${pct.toFixed(0)}% celu (${settings.monthlyTarget.toLocaleString('pl-PL')} zł)`;
+    prog.style.display = 'block';
+  } else {
+    prog.style.display = 'none';
+  }
+}
+
+// ─── LISTA ────────────────────────────────────────────────────────────────────
+function renderLista() {
+  const sorted = [...workData].sort((a,b) => b.date.localeCompare(a.date));
+  const filtered = filterJob === 'Wszystkie' ? sorted : sorted.filter(e => e.job === filterJob);
+
+  const now = new Date();
+  const thisMonth = filtered.filter(e => {
+    const d = new Date(e.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const totalH = thisMonth.reduce((s,e) => s+e.hours, 0);
+  const totalZl = thisMonth.reduce((s,e) => s+e.amount, 0);
+
+  const pills = ['Wszystkie','Etat','Zlecenie','DG','Nadgodziny','Inne'].map(j =>
+    `<div class="pill ${filterJob===j?'active':''}" onclick="setFilter('${j}')">${j}</div>`
+  ).join('');
+
+  const groups = {};
+  filtered.forEach(e => {
+    const key = e.date.slice(0,7);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
+
+  let html = '';
+  Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(key => {
+    const [y,m] = key.split('-');
+    const name = new Date(y, m-1, 1).toLocaleString('pl-PL', {month:'long', year:'numeric'});
+    const sumH = groups[key].reduce((s,e)=>s+e.hours,0);
+    const sumZl = groups[key].reduce((s,e)=>s+e.amount,0);
+    html += `<div class="month-header"><span class="month-name">${name}</span><span class="month-sum">${sumH}h · ${sumZl.toLocaleString('pl-PL')} zł</span></div>`;
+    groups[key].forEach(e => { html += entryHtml(e); });
+  });
+
+  if (filtered.length === 0) {
+    html = `<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Brak wpisów.<br>Naciśnij + aby dodać.</div></div>`;
+  }
+
+  return `
+    <div class="stat-strip">
+      <div class="stat-box"><div class="stat-val">${thisMonth.length}</div><div class="stat-lbl">Dni (mies.)</div></div>
+      <div class="stat-box"><div class="stat-val">${totalH}</div><div class="stat-lbl">Godzin (mies.)</div></div>
+      <div class="stat-box"><div class="stat-val">${totalZl.toLocaleString('pl-PL')}</div><div class="stat-lbl">Zarobek zł</div></div>
+    </div>
+    <div class="pill-row">${pills}</div>
+    ${html}`;
+}
+
+function entryHtml(e) {
+  const d = new Date(e.date);
+  const day = d.getDate();
+  const mon = d.toLocaleString('pl-PL', {month:'short'}).replace('.','');
+  const rate = (e.amount / e.hours).toFixed(0);
+  return `
+    <div class="entry" onclick="openDetail(${e.id})">
+      <div class="entry-date-box">
+        <div class="entry-day">${day}</div>
+        <div class="entry-month">${mon}</div>
+      </div>
+      <div class="entry-info">
+        <div class="entry-job">${e.job}${badgeHtml(e.job)}</div>
+        <div class="entry-meta">${e.hours}h · ${rate} zł/h${e.note ? ' · ' + e.note : ''}</div>
+      </div>
+      <div class="entry-amount">${e.amount.toLocaleString('pl-PL')} zł</div>
+    </div>`;
+}
+
+function badgeHtml(job) {
+  const map = {Etat:'badge-etat', Zlecenie:'badge-zlecenie', DG:'badge-dg'};
+  return `<span class="badge ${map[job]||'badge-inne'}">${job}</span>`;
+}
+
+function setFilter(j) { filterJob = j; renderContent(); }
+
+// ─── KALENDARZ ────────────────────────────────────────────────────────────────
+function renderKalendarz() {
+  const monthName = new Date(calYear, calMonth, 1).toLocaleString('pl-PL', {month:'long', year:'numeric'});
+  const workDays = {};
+  workData.forEach(e => {
+    const d = new Date(e.date);
+    if (d.getFullYear()===calYear && d.getMonth()===calMonth) {
+      workDays[d.getDate()] = (workDays[d.getDate()] || 0) + e.amount;
+    }
+  });
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const offset = (firstDay + 6) % 7;
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const todayD = today.getDate(), todayM = today.getMonth(), todayY = today.getFullYear();
+
+  const heads = ['Pn','Wt','Śr','Cz','Pt','So','Nd'].map(d=>`<div class="cal-head">${d}</div>`).join('');
+  let cells = '';
+  for (let i=0; i<offset; i++) cells += `<div class="cal-cell other-month"><span class="cal-num"></span></div>`;
+  for (let d=1; d<=daysInMonth; d++) {
+    const isToday = d===todayD && calMonth===todayM && calYear===todayY;
+    const hasWork = !!workDays[d];
+    let cls = 'cal-cell' + (isToday?' today':'') + (hasWork&&!isToday?' has-work':'');
+    const dot = hasWork ? '<div class="cal-dot"></div>' : '';
+    const click = hasWork ? `onclick="calDayClick(${d})"` : '';
+    cells += `<div class="${cls}" ${click}><span class="cal-num">${d}</span>${dot}</div>`;
+  }
+
+  const monthEntries = [...workData]
+    .filter(e => { const d=new Date(e.date); return d.getFullYear()===calYear && d.getMonth()===calMonth; })
+    .sort((a,b)=>b.date.localeCompare(a.date));
+
+  const sumH = monthEntries.reduce((s,e)=>s+e.hours,0);
+  const sumZl = monthEntries.reduce((s,e)=>s+e.amount,0);
+
+  const summary = monthEntries.length ? `
+    <div class="stat-strip" style="margin-bottom:16px">
+      <div class="stat-box"><div class="stat-val">${monthEntries.length}</div><div class="stat-lbl">Dni</div></div>
+      <div class="stat-box"><div class="stat-val">${sumH}</div><div class="stat-lbl">Godzin</div></div>
+      <div class="stat-box"><div class="stat-val">${sumZl.toLocaleString('pl-PL')}</div><div class="stat-lbl">Zł</div></div>
+    </div>` : '';
+
+  const entriesSection = monthEntries.length
+    ? monthEntries.map(e=>entryHtml(e)).join('')
+    : `<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Brak wpisów w tym miesiącu</div></div>`;
+
+  return `
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calPrev()">◀</button>
+      <span class="cal-title">${monthName}</span>
+      <button class="cal-nav-btn" onclick="calNext()">▶</button>
+    </div>
+    <div class="card" style="padding:12px;margin-bottom:16px">
+      <div class="cal-grid">${heads}${cells}</div>
+    </div>
+    ${summary}
+    <div class="section-title">Wpisy tego miesiąca</div>
+    ${entriesSection}`;
+}
+
+function calPrev() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderContent(); }
+function calNext() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderContent(); }
+
+function calDayClick(d) {
+  const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const entries = workData.filter(e => e.date === dateStr);
+  if (entries.length === 1) openDetail(entries[0].id);
+}
+
+// ─── STATYSTYKI ───────────────────────────────────────────────────────────────
+function renderStatystyki() {
+  const now = new Date();
+  const thisY = now.getFullYear(), thisM = now.getMonth();
+
+  const mEntries = workData.filter(e => { const d=new Date(e.date); return d.getFullYear()===thisY&&d.getMonth()===thisM; });
+  const yEntries = workData.filter(e => new Date(e.date).getFullYear()===thisY);
+
+  const mH = mEntries.reduce((s,e)=>s+e.hours,0);
+  const mZl = mEntries.reduce((s,e)=>s+e.amount,0);
+  const yH = yEntries.reduce((s,e)=>s+e.hours,0);
+  const yZl = yEntries.reduce((s,e)=>s+e.amount,0);
+  const aH = workData.reduce((s,e)=>s+e.hours,0);
+  const aZl = workData.reduce((s,e)=>s+e.amount,0);
+  const avgHourly = aH>0 ? (aZl/aH).toFixed(2) : '0.00';
+
+  // Projected monthly income
+  const daysInMonth = new Date(thisY, thisM+1, 0).getDate();
+  const dayOfMonth = now.getDate();
+  const projected = dayOfMonth > 0 && mZl > 0 ? Math.round(mZl / dayOfMonth * daysInMonth) : 0;
+
+  // Monthly target progress
+  let targetHtml = '';
+  if (settings.monthlyTarget > 0) {
+    const pct = Math.min(100, (mZl/settings.monthlyTarget*100));
+    const color = pct>=100 ? 'var(--success)' : pct>=70 ? 'var(--accent)' : 'var(--primary)';
+    const remaining = Math.max(0, settings.monthlyTarget - mZl);
+    targetHtml = `
+      <div class="card">
+        <div class="section-title">Cel miesięczny</div>
+        <div class="progress-wrap">
+          <div class="progress-header">
+            <span class="progress-label">${mZl.toLocaleString('pl-PL')} / ${settings.monthlyTarget.toLocaleString('pl-PL')} zł</span>
+            <span class="progress-pct" style="color:${color}">${pct.toFixed(0)}%</span>
+          </div>
+          <div class="progress-bg"><div class="progress-fill" style="width:${pct.toFixed(0)}%;background:${color}"></div></div>
+        </div>
+        ${remaining > 0 ? `<div style="font-size:12px;color:var(--text-muted);margin-top:6px">Brakuje jeszcze: <strong style="color:var(--text)">${remaining.toLocaleString('pl-PL')} zł</strong></div>` : `<div style="font-size:12px;color:var(--success);margin-top:6px;font-weight:700">✅ Cel osiągnięty!</div>`}
+        ${projected > 0 ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">Prognoza na koniec miesiąca: <strong style="color:var(--text)">${projected.toLocaleString('pl-PL')} zł</strong></div>` : ''}
+      </div>`;
+  }
+
+  // By job type
+  const byJob = {};
+  workData.forEach(e => { if(!byJob[e.job]) byJob[e.job]={h:0,zl:0}; byJob[e.job].h+=e.hours; byJob[e.job].zl+=e.amount; });
+  const maxZl = Math.max(...Object.values(byJob).map(v=>v.zl), 1);
+  const jobBars = Object.entries(byJob).sort((a,b)=>b[1].zl-a[1].zl).map(([job,v])=>`
+    <div class="chart-row">
+      <span class="chart-label">${job}</span>
+      <div class="chart-bar-bg"><div class="chart-bar" style="width:${(v.zl/maxZl*100).toFixed(0)}%"></div></div>
+      <span class="chart-val">${v.zl.toLocaleString('pl-PL')} zł</span>
+    </div>`).join('');
+
+  // Last 6 months
+  const months6 = [];
+  for (let i=5; i>=0; i--) {
+    const d = new Date(thisY, thisM-i, 1);
+    const m=d.getMonth(), y=d.getFullYear();
+    const ent = workData.filter(e=>{const dd=new Date(e.date);return dd.getMonth()===m&&dd.getFullYear()===y;});
+    months6.push({
+      label: d.toLocaleString('pl-PL',{month:'short'}).replace('.',''),
+      zl: ent.reduce((s,e)=>s+e.amount,0),
+      h: ent.reduce((s,e)=>s+e.hours,0)
+    });
+  }
+  const maxM = Math.max(...months6.map(m=>m.zl), 1);
+  const monthBars = months6.map(m=>`
+    <div class="chart-row">
+      <span class="chart-label">${m.label}</span>
+      <div class="chart-bar-bg"><div class="chart-bar" style="width:${(m.zl/maxM*100).toFixed(0)}%"></div></div>
+      <span class="chart-val">${m.zl.toLocaleString('pl-PL')} zł</span>
+    </div>`).join('');
+
+  // Best month
+  const monthMap = {};
+  workData.forEach(e => {
+    const k = e.date.slice(0,7);
+    monthMap[k] = (monthMap[k]||0) + e.amount;
+  });
+  const bestKey = Object.keys(monthMap).sort((a,b)=>monthMap[b]-monthMap[a])[0];
+  const bestMonthName = bestKey ? new Date(bestKey+'-01').toLocaleString('pl-PL',{month:'long',year:'numeric'}) : '—';
+  const bestMonthZl = bestKey ? monthMap[bestKey] : 0;
+
+  return `
+    ${targetHtml}
+    <div class="section-title">Ten miesiąc</div>
+    <div class="stat-strip">
+      <div class="stat-box"><div class="stat-val">${mEntries.length}</div><div class="stat-lbl">Dni</div></div>
+      <div class="stat-box"><div class="stat-val">${mH}</div><div class="stat-lbl">Godzin</div></div>
+      <div class="stat-box"><div class="stat-val">${mZl.toLocaleString('pl-PL')}</div><div class="stat-lbl">Zł</div></div>
+    </div>
+
+    <div class="section-title">Ten rok (${thisY})</div>
+    <div class="stat-strip">
+      <div class="stat-box"><div class="stat-val">${yEntries.length}</div><div class="stat-lbl">Dni</div></div>
+      <div class="stat-box"><div class="stat-val">${yH}</div><div class="stat-lbl">Godzin</div></div>
+      <div class="stat-box"><div class="stat-val">${yZl.toLocaleString('pl-PL')}</div><div class="stat-lbl">Zł</div></div>
+    </div>
+
+    <div class="section-title">Ogólne</div>
+    <div class="stat-strip">
+      <div class="stat-box"><div class="stat-val">${workData.length}</div><div class="stat-lbl">Wszystkich dni</div></div>
+      <div class="stat-box"><div class="stat-val">${aH}</div><div class="stat-lbl">Wszystkich godz.</div></div>
+      <div class="stat-box"><div class="stat-val">${avgHourly}</div><div class="stat-lbl">Zł/h śr.</div></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Najlepszy miesiąc</div>
+      <div style="font-size:15px;font-weight:700">${bestMonthName}</div>
+      <div style="font-size:20px;font-weight:800;color:var(--success);margin-top:4px">${bestMonthZl.toLocaleString('pl-PL')} zł</div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Ostatnie 6 miesięcy</div>
+      <div class="chart-bar-wrap">${monthBars}</div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Według rodzaju pracy</div>
+      <div class="chart-bar-wrap">${jobBars||'<div style="color:var(--text-muted);font-size:13px">Brak danych</div>'}</div>
+    </div>`;
+}
+
+// ─── ARCHIWUM ─────────────────────────────────────────────────────────────────
+function renderArchiwum() {
+  const groups = {};
+  workData.forEach(e => {
+    const key = e.date.slice(0,7);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
+
+  const keys = Object.keys(groups).sort((a,b)=>b.localeCompare(a));
+  if (!keys.length) return `<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-text">Brak danych</div></div>`;
+
+  return keys.map(key => {
+    const [y,m] = key.split('-');
+    const name = new Date(y, m-1, 1).toLocaleString('pl-PL', {month:'long', year:'numeric'});
+    const entries = groups[key].sort((a,b)=>b.date.localeCompare(a.date));
+    const sumZl = entries.reduce((s,e)=>s+e.amount,0);
+    const sumH = entries.reduce((s,e)=>s+e.hours,0);
+    const rows = entries.map(e=>`
+      <tr onclick="openDetail(${e.id})" style="cursor:pointer">
+        <td>${new Date(e.date).toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit'})}</td>
+        <td>${e.job}</td>
+        <td>${e.hours}h</td>
+        <td style="font-weight:700;color:var(--success)">${e.amount.toLocaleString('pl-PL')} zł</td>
+      </tr>`).join('');
+    return `
+      <div class="archive-month">
+        <div class="archive-header" onclick="toggleArchive('${key}')">
+          <span class="archive-name">${name}</span>
+          <span class="archive-stats">${entries.length} dni · ${sumH}h · ${sumZl.toLocaleString('pl-PL')} zł</span>
+        </div>
+        <div class="archive-body" id="arch-${key}">
+          <table class="report-table">
+            <thead><tr><th>Data</th><th>Typ</th><th>Godz.</th><th>Kwota</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div class="archive-actions">
+            <button class="btn btn-primary" style="font-size:13px;padding:10px" onclick="exportMonthCSV('${key}');event.stopPropagation()">📊 CSV</button>
+            <button class="btn btn-cancel" style="font-size:13px;padding:10px" onclick="printMonth('${key}');event.stopPropagation()">🖨️ Drukuj</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleArchive(key) {
+  const el = document.getElementById('arch-'+key);
+  if (el) el.classList.toggle('open');
+}
+
+// ─── USTAWIENIA ───────────────────────────────────────────────────────────────
+function renderUstawienia() {
+  const totalEntries = workData.length;
+  const totalH = workData.reduce((s,e)=>s+e.hours,0);
+  const totalZl = workData.reduce((s,e)=>s+e.amount,0);
+
+  return `
+    <div class="section-title">Cel i stawki</div>
+    <div class="card">
+      <div class="form-group">
+        <label class="form-label">Cel miesięczny (zł)</label>
+        <input type="number" class="form-input" id="sTarget"
+          value="${settings.monthlyTarget||''}" placeholder="np. 5000" min="0" step="100"
+          oninput="updateSetting('monthlyTarget', parseFloat(this.value)||0)" />
+        <div class="form-hint">Wyświetla pasek postępu w nagłówku</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Domyślna stawka (zł/h)</label>
+        <input type="number" class="form-input" id="sRate"
+          value="${settings.defaultRate||''}" placeholder="np. 35" min="0" step="0.5"
+          oninput="updateSetting('defaultRate', parseFloat(this.value)||0)" />
+        <div class="form-hint">Auto-wylicza kwotę podczas dodawania wpisu</div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Domyślna liczba godzin</label>
+        <input type="number" class="form-input" id="sHours"
+          value="${settings.defaultHours||8}" placeholder="8" min="1" max="24" step="0.5"
+          oninput="updateSetting('defaultHours', parseFloat(this.value)||8)" />
+      </div>
+    </div>
+
+    <div class="section-title">Wygląd</div>
+    <div class="card">
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Ciemny motyw</div>
+          <div class="settings-sub">Zmniejsza zmęczenie oczu</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="sDarkMode" ${settings.darkMode?'checked':''} onchange="toggleDarkMode()" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="section-title">Eksport i import</div>
+    <div class="card">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-primary btn-full" onclick="exportCSV()">📊 Eksportuj do CSV (Excel)</button>
+        <button class="btn btn-success btn-full" onclick="exportJSON()">💾 Zapisz kopię zapasową (JSON)</button>
+        <button class="btn btn-cancel btn-full" onclick="importJSON()">📂 Wczytaj kopię zapasową (JSON)</button>
+      </div>
+    </div>
+
+    <div class="section-title">Dane</div>
+    <div class="card">
+      <div class="settings-row">
+        <div class="settings-label">Łącznie wpisów</div>
+        <div style="font-weight:700">${totalEntries}</div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">Łącznie godzin</div>
+        <div style="font-weight:700">${totalH} h</div>
+      </div>
+      <div class="settings-row" style="border-bottom:none">
+        <div class="settings-label">Łącznie zarobiono</div>
+        <div style="font-weight:700;color:var(--success)">${totalZl.toLocaleString('pl-PL')} zł</div>
+      </div>
+    </div>
+    <div class="card">
+      <button class="btn btn-danger btn-full" onclick="resetAllData()">🗑️ Usuń wszystkie dane</button>
+    </div>
+
+    <div style="text-align:center;margin-top:8px;color:var(--text-muted);font-size:12px;padding-bottom:8px">
+      Tracker Godzin Pracy v2.0
+    </div>`;
+}
+
+function updateSetting(key, value) {
+  settings[key] = value;
+  saveSettings();
+  updateHeader();
+}
+
+// ─── FORM ─────────────────────────────────────────────────────────────────────
+function openAddModal() {
+  editingId = null;
+  amountManuallySet = false;
+  document.getElementById('formTitle').textContent = 'Dodaj dzień pracy';
+  document.getElementById('formSubmitBtn').textContent = 'Zapisz';
+  document.getElementById('workForm').reset();
+  document.getElementById('entryId').value = '';
+  document.getElementById('fDate').value = today.toISOString().split('T')[0];
+  document.getElementById('fHours').value = settings.defaultHours || 8;
+  if (settings.defaultRate > 0) {
+    document.getElementById('fAmount').value = ((settings.defaultHours||8) * settings.defaultRate).toFixed(0);
+    showRateHint();
+  }
+  document.getElementById('formOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fHours').focus(), 350);
+}
+
+function openEditModal(id) {
+  const e = workData.find(x=>x.id===id);
+  if (!e) return;
+  editingId = id;
+  amountManuallySet = true;
+  document.getElementById('formTitle').textContent = 'Edytuj wpis';
+  document.getElementById('formSubmitBtn').textContent = 'Aktualizuj';
+  document.getElementById('entryId').value = id;
+  document.getElementById('fDate').value = e.date;
+  document.getElementById('fJob').value = e.job;
+  document.getElementById('fHours').value = e.hours;
+  document.getElementById('fAmount').value = e.amount;
+  document.getElementById('fNote').value = e.note || '';
+  document.getElementById('rateHint').style.display = 'none';
+  document.getElementById('formOverlay').classList.add('open');
+}
+
+function autoCalcAmount() {
+  if (amountManuallySet || settings.defaultRate <= 0 || editingId) return;
+  const h = parseFloat(document.getElementById('fHours').value) || 0;
+  if (h > 0) {
+    document.getElementById('fAmount').value = (h * settings.defaultRate).toFixed(0);
+    showRateHint();
+  }
+}
+
+function showRateHint() {
+  const hint = document.getElementById('rateHint');
+  hint.textContent = `Wyliczone: ${settings.defaultRate} zł/h`;
+  hint.style.display = 'block';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('fAmount').addEventListener('input', () => {
+    amountManuallySet = true;
+    document.getElementById('rateHint').style.display = 'none';
+  });
+});
+
+function closeModal() {
+  document.getElementById('formOverlay').classList.remove('open');
+  editingId = null;
+  amountManuallySet = false;
+}
+
+function handleOverlayClick(ev) {
+  if (ev.target === document.getElementById('formOverlay')) closeModal();
+}
+
+function saveEntry(ev) {
+  ev.preventDefault();
+  const date = document.getElementById('fDate').value;
+  const job = document.getElementById('fJob').value;
+  const hours = parseFloat(document.getElementById('fHours').value);
+  const amount = parseFloat(document.getElementById('fAmount').value);
+  const note = document.getElementById('fNote').value.trim();
+
+  if (editingId) {
+    const idx = workData.findIndex(e=>e.id===editingId);
+    if (idx !== -1) workData[idx] = {...workData[idx], date, job, hours, amount, note};
+    showToast('✅ Zaktualizowano wpis');
+  } else {
+    workData.push({id: nextId(), date, job, hours, amount, note});
+    showToast('✅ Dodano dzień pracy');
+  }
+  save();
+  closeModal();
+  closeDetail();
+  renderContent();
+}
+
+// ─── DETAIL MODAL ─────────────────────────────────────────────────────────────
+function openDetail(id) {
+  detailId = id;
+  const e = workData.find(x=>x.id===id);
+  if (!e) return;
+  const d = new Date(e.date).toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const rate = (e.amount/e.hours).toFixed(2);
+  document.getElementById('detailTitle').textContent = e.job;
+  document.getElementById('detailContent').innerHTML = `
+    <div class="detail-row"><span class="detail-key">Data</span><span class="detail-val">${d}</span></div>
+    <div class="detail-row"><span class="detail-key">Rodzaj</span><span class="detail-val">${e.job}${badgeHtml(e.job)}</span></div>
+    <div class="detail-row"><span class="detail-key">Godziny</span><span class="detail-val">${e.hours} h</span></div>
+    <div class="detail-row"><span class="detail-key">Zarobek</span><span class="detail-val" style="color:var(--success)">${e.amount.toLocaleString('pl-PL')} zł</span></div>
+    <div class="detail-row"><span class="detail-key">Stawka</span><span class="detail-val">${rate} zł/h</span></div>
+    ${e.note ? `<div class="detail-row"><span class="detail-key">Notatka</span><span class="detail-val">${e.note}</span></div>` : ''}
+  `;
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function closeDetail() { document.getElementById('detailOverlay').classList.remove('open'); detailId = null; }
+function handleDetailOverlayClick(ev) { if (ev.target===document.getElementById('detailOverlay')) closeDetail(); }
+
+function deleteEntry() {
+  if (!detailId) return;
+  if (!confirm('Usunąć ten wpis?')) return;
+  workData = workData.filter(e=>e.id!==detailId);
+  save(); closeDetail(); showToast('🗑️ Wpis usunięty'); renderContent();
+}
+
+function editFromDetail() { const id=detailId; closeDetail(); openEditModal(id); }
+
+// ─── EXPORT / IMPORT ──────────────────────────────────────────────────────────
+function exportCSV() {
+  if (!workData.length) { showToast('Brak danych do eksportu'); return; }
+  const rows = [['Data','Dzień tygodnia','Rodzaj','Godziny','Kwota (zł)','Stawka (zł/h)','Notatka']];
+  [...workData].sort((a,b)=>b.date.localeCompare(a.date)).forEach(e => {
+    const dow = new Date(e.date).toLocaleDateString('pl-PL',{weekday:'long'});
+    const rate = (e.amount/e.hours).toFixed(2);
+    rows.push([e.date, dow, e.job, e.hours, e.amount, rate, e.note||'']);
+  });
+  const csv = '﻿' + rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  downloadBlob(csv, `tracker_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv;charset=utf-8');
+  showToast('📊 Wyeksportowano do CSV');
+}
+
+function exportMonthCSV(key) {
+  const [y,m] = key.split('-');
+  const entries = workData.filter(e=>e.date.startsWith(key)).sort((a,b)=>b.date.localeCompare(a.date));
+  if (!entries.length) return;
+  const name = new Date(y,m-1,1).toLocaleString('pl-PL',{month:'long',year:'numeric'});
+  const rows = [['Data','Dzień tygodnia','Rodzaj','Godziny','Kwota (zł)','Stawka (zł/h)','Notatka']];
+  entries.forEach(e => {
+    const dow = new Date(e.date).toLocaleDateString('pl-PL',{weekday:'long'});
+    rows.push([e.date, dow, e.job, e.hours, e.amount, (e.amount/e.hours).toFixed(2), e.note||'']);
+  });
+  const csv = '﻿' + rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  downloadBlob(csv, `tracker_${key}.csv`, 'text/csv;charset=utf-8');
+  showToast(`📊 Eksport: ${name}`);
+}
+
+function exportJSON() {
+  const data = {version:2, exportDate: new Date().toISOString(), workData, settings};
+  downloadBlob(JSON.stringify(data, null, 2), `tracker_backup_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+  showToast('💾 Zapisano kopię zapasową');
+}
+
+function importJSON() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = ev => {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.workData && Array.isArray(data.workData)) {
+          if (confirm(`Importować ${data.workData.length} wpisów?\nZastąpi obecne dane.`)) {
+            workData = data.workData;
+            if (data.settings) { settings = {...settings, ...data.settings}; saveSettings(); applyTheme(settings.darkMode); }
+            save(); renderContent(); showToast('✅ Zaimportowano dane');
+          }
+        } else { showToast('❌ Nieprawidłowy plik'); }
+      } catch { showToast('❌ Błąd odczytu pliku'); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function printMonth(key) {
+  const [y,m] = key.split('-');
+  const entries = workData.filter(e=>e.date.startsWith(key)).sort((a,b)=>b.date.localeCompare(a.date));
+  const name = new Date(y,m-1,1).toLocaleString('pl-PL',{month:'long',year:'numeric'});
+  const sumH = entries.reduce((s,e)=>s+e.hours,0);
+  const sumZl = entries.reduce((s,e)=>s+e.amount,0);
+  const rows = entries.map(e=>`
+    <tr>
+      <td>${new Date(e.date).toLocaleDateString('pl-PL',{weekday:'short',day:'2-digit',month:'2-digit'})}</td>
+      <td>${e.job}</td>
+      <td>${e.hours}h</td>
+      <td><strong>${e.amount.toLocaleString('pl-PL')} zł</strong></td>
+      <td style="color:#666">${e.note||''}</td>
+    </tr>`).join('');
+  const html = `<!DOCTYPE html><html lang="pl"><head><meta charset="UTF-8"><title>Raport ${name}</title>
+    <style>body{font-family:Arial,sans-serif;padding:20px;color:#333}h1{color:#0a7fc4;margin-bottom:4px}
+    .sub{color:#666;font-size:14px;margin-bottom:20px}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th{background:#0a7fc4;color:white;padding:10px;text-align:left}
+    td{padding:10px;border-bottom:1px solid #eee}
+    .total{font-size:16px;font-weight:bold;margin-top:20px;text-align:right;color:#2e7d32}
+    @media print{button{display:none}}</style></head><body>
+    <h1>Raport pracy</h1><div class="sub">${name} · ${entries.length} dni · ${sumH}h</div>
+    <table><thead><tr><th>Data</th><th>Rodzaj</th><th>Godziny</th><th>Kwota</th><th>Notatka</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    <div class="total">Łącznie: ${sumZl.toLocaleString('pl-PL')} zł</div>
+    <br><button onclick="window.print()">Drukuj</button>
+    </body></html>`;
+  const w = window.open('','_blank');
+  w.document.write(html); w.document.close();
+}
+
+function downloadBlob(content, filename, type) {
+  const blob = new Blob([content], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function resetAllData() {
+  if (!confirm('Usunąć wszystkie dane?\nTej operacji nie można cofnąć.')) return;
+  if (!confirm('Na pewno? Wszystkie wpisy zostaną skasowane.')) return;
+  workData = []; save(); renderContent(); showToast('🗑️ Wszystkie dane usunięte');
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ─── SWIPE GESTURES (iPhone) ──────────────────────────────────────────────────
+let touchStartX = 0, touchStartY = 0;
+document.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, {passive: true});
+document.addEventListener('touchend', e => {
+  const dx = touchStartX - e.changedTouches[0].clientX;
+  const dy = Math.abs(touchStartY - e.changedTouches[0].clientY);
+  if (Math.abs(dx) > 60 && dy < 50) {
+    const idx = TAB_ORDER.indexOf(currentTab);
+    if (dx > 0 && idx < TAB_ORDER.length-1) switchTab(TAB_ORDER[idx+1]);
+    else if (dx < 0 && idx > 0) switchTab(TAB_ORDER[idx-1]);
+  }
+}, {passive: true});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderContent();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

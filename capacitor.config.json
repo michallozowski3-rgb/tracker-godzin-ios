@@ -1,0 +1,19 @@
+{
+  "appId": "pl.tracker.godzinpracy",
+  "appName": "Tracker Godzin",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "Light",
+      "backgroundColor": "#000080"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#0a7fc4",
+      "showSpinner": false
+    }
+  }
+}
